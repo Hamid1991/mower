@@ -1,10 +1,15 @@
-package com.katas.mower;
+package com.katas.mower.service;
+
+import com.katas.mower.data.*;
+import com.katas.mower.exceptions.InvalidMowerJobFileInputException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+
+import static java.lang.String.format;
 
 public class MowerJobService {
 
@@ -24,6 +29,14 @@ public class MowerJobService {
 
     public static final String FILE_NOT_FOUND_MESSAGE = "mower-job.txt file is not found";
 
+    public static final String INVALID_MOWER_JOB_FILE_INPUT = "the %s input is not valid";
+
+    public static final String FIELD_DIMENSIONS_REGEX = "^\\d\\s\\d$";
+
+    public static final String MOWER_INITIAL_POSITION_REGEX = "^\\d\\s\\d\\s(N|E|W|S)+$";
+
+    public static final String INSTRUCTIONS_REGEX = "^(A|D|G)*$";
+
     public static MowerJobResult executeMowersJobs(String mowerJobFilePath) throws Exception {
 
         MowerJobResult mowerJobResult = new MowerJobResult();
@@ -37,6 +50,11 @@ public class MowerJobService {
 
             // extract field dimensions
             String extractedFieldDimensions = mowerJobFileReader.nextLine();
+
+            if(!extractedFieldDimensions.matches(FIELD_DIMENSIONS_REGEX)){
+                throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "field dimensions"));
+            }
+
             int xDimension = Integer.parseInt(extractedFieldDimensions.split(SPACE_LIMITER)[0]);
             int yDimension = Integer.parseInt(extractedFieldDimensions.split(SPACE_LIMITER)[1]);
             System.out.printf(FIELD_DIMENSIONS_MESSAGE, xDimension, yDimension);
@@ -51,6 +69,11 @@ public class MowerJobService {
 
                 // extract mowerInitialPosition
                 String mowerInitialPosition = mowerJobFileReader.nextLine();
+
+                if(!mowerInitialPosition.matches(MOWER_INITIAL_POSITION_REGEX)){
+                    throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "mower initial position"));
+                }
+
                 int mowerXPosition = Integer.parseInt(mowerInitialPosition.split(SPACE_LIMITER)[0]);
                 int mowerYPosition = Integer.parseInt(mowerInitialPosition.split(SPACE_LIMITER)[1]);
                 Orientation mowerOrientation = Orientation.valueOf(mowerInitialPosition.split(SPACE_LIMITER)[2]);
@@ -59,6 +82,11 @@ public class MowerJobService {
 
                 // extract mowerJobInstructions
                 String mowerJobInstructions = mowerJobFileReader.nextLine();
+
+                if(!mowerJobInstructions.matches(INSTRUCTIONS_REGEX)){
+                    throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "instructions"));
+                }
+
                 System.out.printf(MOWER_INSTRUCTIONS_MESSAGE, mowerOrderIndex, mowerJobInstructions);
 
                 // starting mower job

@@ -1,4 +1,4 @@
-package com.katas.mower;
+package com.katas.mower.data;
 
 public class FieldDimensions {
     
