@@ -5,14 +5,14 @@ import com.katas.mower.data.MowerJobResult;
 import com.katas.mower.data.MowerPosition;
 import com.katas.mower.data.Orientation;
 import com.katas.mower.exceptions.InvalidMowerJobFileInputException;
+import com.katas.mower.exceptions.OutOfFieldDimensionException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.katas.mower.service.MowerJobService.FILE_NOT_FOUND_MESSAGE;
-import static com.katas.mower.service.MowerJobService.INVALID_MOWER_JOB_FILE_INPUT;
+import static com.katas.mower.service.MowerJobService.*;
 import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,7 +64,8 @@ public class MowerJobServiceTest {
 
         //Then
         var actualException = assertThrows(Exception.class, () -> MowerJobService.executeMowersJobs(noMowerJobFilePath));
-        assertThat(actualException.getMessage()).isEqualTo(FILE_NOT_FOUND_MESSAGE);
+        var expectedErrorMessage = format(FILE_NOT_FOUND_MESSAGE, "no-mower-job-file.txt");
+        assertThat(actualException.getMessage()).isEqualTo(expectedErrorMessage);
     }
 
     @Test
@@ -96,7 +97,18 @@ public class MowerJobServiceTest {
 
         //Then
         var actualException = assertThrows(InvalidMowerJobFileInputException.class, () -> MowerJobService.executeMowersJobs(invalidInstructionsMowerJobInputFilePath));
-        String expectedInvalidInstructionsInputMessage = format(INVALID_MOWER_JOB_FILE_INPUT, "instructions");
+        var expectedInvalidInstructionsInputMessage = format(INVALID_MOWER_JOB_FILE_INPUT, "instructions");
         assertThat(actualException.getMessage()).isEqualTo(expectedInvalidInstructionsInputMessage);
+    }
+
+    @Test
+    public void executeMowersJobs_whenMowerInitialPositionIsOutOfFieldDimensions_thenItFails() {
+        //Given
+        var mowerInitialPositionIsOutOfFieldDimensionsFilePath = "src/test/resources/out-of-field-dimensions-mower-job-file.txt";
+
+        //Then
+        var actualException = assertThrows(OutOfFieldDimensionException.class, () -> MowerJobService.executeMowersJobs(mowerInitialPositionIsOutOfFieldDimensionsFilePath));
+        var expectedOutOfFieldDimensionsMessage = format(OUT_OF_FIELD_DIMENSIONS_MESSAGE, 1, 6, 5, 5);
+        assertThat(actualException.getMessage()).isEqualTo(expectedOutOfFieldDimensionsMessage);
     }
 }
