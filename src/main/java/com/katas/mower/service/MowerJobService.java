@@ -1,8 +1,6 @@
 package com.katas.mower.service;
 
 import com.katas.mower.data.*;
-import com.katas.mower.exceptions.InvalidMowerJobFileInputException;
-import com.katas.mower.exceptions.OutOfFieldDimensionException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,7 +28,9 @@ public class MowerJobService {
 
     public static final String FILE_NOT_FOUND_MESSAGE = "%s file is not found%n";
 
-    public static final String INVALID_MOWER_JOB_FILE_INPUT = "the %s input is not valid%n";
+    public static final String INVALID_MOWER_JOB_FILE_INPUT = "the mower %d %s input is not valid%n";
+
+    public static final String INVALID_FIELD_DIMENSIONS = "the %s input is not valid%n";
 
     public static final String OUT_OF_FIELD_DIMENSIONS_MESSAGE = "mower initial position : XPosition %d | YPosition %d is out of field dimensions : xDimension %d | yDimension %d%n";
 
@@ -46,18 +46,22 @@ public class MowerJobService {
 
         File mowerJobFile = null;
         try {
+            var mowerOrderIndex = 1;
+            List<String> failedJobsMessages = new ArrayList<>();
 
-            int mowerOrderIndex = 1;
 
             mowerJobFile = new File(mowerJobFilePath);
             Scanner mowerJobFileReader = new Scanner(mowerJobFile);
 
             // extract field dimensions
-            String extractedFieldDimensions = mowerJobFileReader.nextLine();
+            var extractedFieldDimensions = mowerJobFileReader.nextLine();
 
             if (!extractedFieldDimensions.matches(FIELD_DIMENSIONS_REGEX)) {
-                System.out.printf(INVALID_MOWER_JOB_FILE_INPUT, "field dimensions");
-                throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "field dimensions"));
+                System.out.printf(INVALID_FIELD_DIMENSIONS, "field dimensions");
+                failedJobsMessages.add(format(INVALID_FIELD_DIMENSIONS, "field dimensions"));
+                mowerJobResult.setFailedJobsMessages(failedJobsMessages);
+                mowerJobResult.setMowersFinalPositions(null);
+                return mowerJobResult;
             }
 
             var xDimension = Integer.parseInt(extractedFieldDimensions.split(SPACE_LIMITER)[0]);
@@ -76,8 +80,11 @@ public class MowerJobService {
                 var mowerInitialPosition = mowerJobFileReader.nextLine();
 
                 if (!mowerInitialPosition.matches(MOWER_INITIAL_POSITION_REGEX)) {
-                    System.out.printf(INVALID_MOWER_JOB_FILE_INPUT, "mower initial position");
-                    throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "mower initial position"));
+                    System.out.printf(INVALID_MOWER_JOB_FILE_INPUT, mowerOrderIndex, "mower initial position");
+                    failedJobsMessages.add(format(INVALID_MOWER_JOB_FILE_INPUT, mowerOrderIndex, "mower initial position"));
+                    mowerJobFileReader.nextLine();
+                    mowerOrderIndex++;
+                    continue;
                 }
 
                 var mowerXPosition = Integer.parseInt(mowerInitialPosition.split(SPACE_LIMITER)[0]);
@@ -86,7 +93,10 @@ public class MowerJobService {
 
                 if (mowerXPosition > xDimension || mowerYPosition > yDimension) {
                     System.out.printf(OUT_OF_FIELD_DIMENSIONS_MESSAGE, mowerXPosition, mowerYPosition, xDimension, yDimension);
-                    throw new OutOfFieldDimensionException(format(OUT_OF_FIELD_DIMENSIONS_MESSAGE, mowerXPosition, mowerYPosition, xDimension, yDimension));
+                    failedJobsMessages.add(format(OUT_OF_FIELD_DIMENSIONS_MESSAGE, mowerXPosition, mowerYPosition, xDimension, yDimension));
+                    mowerJobFileReader.nextLine();
+                    mowerOrderIndex++;
+                    continue;
                 }
                 System.out.printf(MOWER_INITIAL_POSITION_MESSAGE, mowerOrderIndex, mowerXPosition, mowerYPosition, mowerOrientation);
 
@@ -94,8 +104,10 @@ public class MowerJobService {
                 var mowerJobInstructions = mowerJobFileReader.nextLine();
 
                 if (!mowerJobInstructions.matches(INSTRUCTIONS_REGEX)) {
-                    System.out.printf(INVALID_MOWER_JOB_FILE_INPUT, "instructions");
-                    throw new InvalidMowerJobFileInputException(format(INVALID_MOWER_JOB_FILE_INPUT, "instructions"));
+                    System.out.printf(INVALID_MOWER_JOB_FILE_INPUT, mowerOrderIndex, "instructions");
+                    failedJobsMessages.add(format(INVALID_MOWER_JOB_FILE_INPUT, mowerOrderIndex, "instructions"));
+                    mowerOrderIndex++;
+                    continue;
                 }
 
                 System.out.printf(MOWER_INSTRUCTIONS_MESSAGE, mowerOrderIndex, mowerJobInstructions);
@@ -110,6 +122,7 @@ public class MowerJobService {
             mowerJobFileReader.close();
 
             mowerJobResult.setMowersFinalPositions(mowersFinalPositions);
+            mowerJobResult.setFailedJobsMessages(failedJobsMessages);
 
         } catch (FileNotFoundException e) {
             var mowerJobFileName = mowerJobFile.getName();
